@@ -1,0 +1,44 @@
+﻿body {
+    max-width: 960px;
+    font-family: 'Open Sans', sans-serif; /* Гарнитура текста */
+    padding-left: 40px;
+    padding-right: 40px;
+}
+
+.hcont {
+    /*font-size: 125%;*/ /* Размер шрифта в процентах */
+    color: #1946ba;
+}
+
+.btn {
+    background-color: #ec0b43;
+    border: none;
+    color: white;
+    padding: 8px 8px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+}
+
+.cont {
+    padding: 10px; /* Поля вокруг */
+}
+
+.block {
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+
+.qtp {
+    border: 3px solid #F5F5F5; /* Параметры рамки */
+    /*margin: 5px;*/ /* Отступы вокруг */
+}
+
+.qtc {
+    border-left: 3px solid #666; /* Параметры рамки */
+    margin-left: 35px; /* Отступ слева */
+    margin-right: 35px; /* Отступ справа */
+}

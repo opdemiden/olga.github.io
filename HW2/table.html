@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://d3js.org/d3.v3.min.js"></script>
+</head>
+<body>
+  <script>
+
+    d3.json('countries_1995_2012.json', function(inputData) {
+
+        // Первый год данных
+        var timelineYearsBegin = 1995;
+        // Последний год данных
+        var timelineYearsEnd = 2012;
+        // Массив континентов
+        var continentControl = ['Americas', 'Africa', 'Asia', 'Europe', 'Oceania'];
+        // Массив элемента группировки
+        var aggregationControl = ['None', 'by Continent']
+        // Массив с выбранными континентами
+        var continentFilter = [];
+        // Отфильтрованные данные
+        var filtredData = [];
+
+        // Группировка
+        var isAgregated = false;
+
+        // Сортировка по увеличению
+        var sortedAscending = true;
+        // Столбец сортировки
+        var sortedTitle = '';
+
+        var index = 0;
+        var statsData = []
+
+        // Столбцы с форматированием
+        var statsColumns = [
+            {
+                title: 'name',
+                format: function (t) { return t }
+            }, {
+                title: 'continent',
+                format: function (t) { return t }
+            }, {
+                title: 'gdp',
+                format: d3.format(",.0f")
+            }, {
+                title: 'life_expectancy',
+                format: d3.format(",.1f")
+            }, {
+                title: 'population',
+                format: function (t) { return t }
+            }, {
+                title: 'year',
+                format: function (t) { return t }
+            }
+        ]
+
+        // Добавляем выбор периода
+        var timeline = d3.select('body').append('div').attr('class', 'controller-row').text('Time update:');
+        timeline.append('span').text(timelineYearsBegin);
+
+        timeline.append('input').attr('type', 'range')
+            .style("cursor", "pointer").attr('name', 'points')
+            .attr('min', timelineYearsBegin).attr('max', timelineYearsEnd)
+            .attr('step', '1').attr("value", '0')
+            .on("change", function (value) {
+                index = this.value - timelineYearsBegin;
+                updateData();
+            });
+
+        timeline.append('span').text(timelineYearsEnd);
+
+        // Добавляем фильтр по континентам
+        var filterController = d3.select('body').append('div')
+            .attr('class', 'controller-row')
+            .text('Filter by:').selectAll('span')
+            .data(continentControl).enter().append("span");
+
+        filterController.append('input').attr('type', 'checkbox')
+            .attr('id', function(d) { return 'checkbox-' + d.toLowerCase(); })
+            .attr('name', function(d) { return d; })
+            .attr('value', function(d) { return d; })
+            .on('change', function(value) {
+            // Добавляем или удаляем континет из массива выбранных
+            if (this.checked) {
+                continentFilter.push(value);
+            } else {
+                var country = continentFilter.indexOf(value);
+                if (country !== -1) {
+                    continentFilter.splice(country, 1);
+                }
+            }
+            updateData();
+        });
+    
+        filterController.append("label")
+            .attr('for', function(d) { return 'checkbox-' + d.toLowerCase(); })
+            .text(function(d) { return d; });
+
+        // Добавлем элемент группировки
+        var aggregation = d3.select('body').append('div')
+            .attr('class', 'controller-row')
+            .text('Aggregation:').selectAll('span')
+            .data(aggregationControl).enter().append("span");
+
+        aggregation.append('input').attr('type', 'radio')
+            .attr('id', function(d) { return 'radio-' + d.toLowerCase(); })
+            .attr('name', 'aggregation')
+            .attr('value', function(d) { return d; })
+            .property('checked', function(d, i) { return i == 0; })
+            .on('click', function(value) {
+                if (value == 'None') {
+                  isAgregated = false;
+                }
+                if (value == 'by Continent') {
+                  isAgregated = true;
+                }
+                updateData();
+            });
+
+        aggregation.append("label")
+            .attr('for', function(d) { return 'radio-' + d.toLowerCase(); })
+            .text(function(d) { return d; });
+
+        var table = d3.select('body').append('table')
+            .classed('country-table', true);
+        var thead = table.append('thead');
+        var tbody = table.append('tbody');
+        var sortedThElement;
+
+        table.append('caption').html('World Countries Ranking');
+
+        thead.append('tr').selectAll('th')
+            .data(statsColumns)
+            .enter().append('th')
+            .text(function(d) { return d.title; })
+            .classed('center-text', true)
+            .on('click', function(header, i) {
+                sortedAscending = sortedTitle != header.title ? true : !sortedAscending;
+                sortedTitle = header.title;
+                if (sortedThElement) {
+                    sortedThElement.classed('up-arrowed', false);
+                    sortedThElement.classed('down-arrowed', false);
+                }
+                sortedThElement = d3.select(this);
+                sortedThElement.classed('up-arrowed', sortedAscending);
+                sortedThElement.classed('down-arrowed', !sortedAscending);
+                sortRows(sortedTitle, sortedAscending);
+                updateData();
+            });
+
+        // Обновить данные
+        function updateData(){
+            statsData = []
+            for (var i = 0; i < inputData.length; i++) {
+                statsData.push({
+                    name: inputData[i].name,
+                    continent: inputData[i].continent,
+                    gdp: inputData[i].years[index].gdp,
+                    life_expectancy: inputData[i].years[index].life_expectancy,
+                    population: inputData[i].years[index].population,
+                    year: inputData[i].years[index].year
+                })
+            }
+            filtredData = statsData;
+
+            tbody.selectAll('tr').remove();
+
+            // Если не выбран континент или выбраны все, то фильтрация по континенту не нужна
+            if (continentFilter.length == 0 || continentFilter.length == 5) {
+                if (isAgregated) {
+                    aggregateData();
+                    return;
+                }
+                showDataRows(statsData);
+            } else {
+                filtredData = [];
+                statsData.forEach(function(item) {
+                    if (continentFilter.includes(item.continent)) {
+                        filtredData.push(item);
+                    }
+                });
+                if (isAgregated) {
+                    aggregateData();
+                    return;
+                }
+                showDataRows(filtredData);
+            }
+            sortRows(sortedTitle, sortedAscending);
+        }
+
+        // Сделать/убрать группировку
+        function aggregateData() {
+            var aggrData = d3.nest()
+              .key(function(d) { return d.continent })
+              .rollup(function(leaves) {
+                  return {
+                  name: leaves[0].continent,
+                  continent: leaves[0].continent,
+                  gdp: d3.sum(leaves.map(function(item) {
+                  return item.gdp;
+                  })),
+                  life_expectancy: d3.mean(leaves.map(function(item) {
+                  return item.life_expectancy;
+                  })),
+                  population: d3.sum(leaves.map(function(item) {
+                  return item.population;
+                  })),
+                  year: leaves[0].year
+                  };
+                  })
+                  .entries(filtredData);
+                  tbody.selectAll('tr').remove();
+                  aggrData = aggrData.map(function(item) {
+                  return item.values;
+                  });
+
+              showDataRows(aggrData);
+              sortRows(sortedTitle, sortedAscending);
+        }
+
+        // Сортировка данных
+        function sortRows(title, ascending) {
+          if (!title) {
+            return;
+          }
+          tbody.selectAll('tr').sort(function(a, b) {
+            if (ascending) {
+              return d3.ascending(a[title], b[title])
+                || d3.ascending(a['name'], b['name']);
+            }
+            return d3.descending(a[title], b[title])
+              || d3.ascending(a['name'], b['name']);
+          });
+
+            tbody.selectAll('tr').style('background-color', null)
+            .attr('class', function(d, i) {
+            if (i%2 != 0) {d3.select(this).style('background-color', '#DCDCDC')}
+            });
+        }
+
+        // Отрисовка строк
+        function showDataRows(data) {
+
+            var rows = tbody.selectAll('tr').data(data)
+              .enter().append('tr').attr('class', 'row');
+
+            var cells = rows.selectAll('td')
+                .data(function(row) {
+                    return statsColumns.map(function(column, i) {
+                        return column.format(row[column.title]);
+                    });
+                })
+                .enter().append('td').text(function(d) { return d; })
+                .attr('class', function(d, i) {
+                    return i < 2 ? 'center-text' : 'right-text';
+                })
+                .on('mouseover', function(d, i) {
+                    d3.select(this.parentNode).style('background-color', '  #F3ED86');
+                })
+                .on('mouseout', function() {
+                    tbody.selectAll('tr').attr('class', function(d, i) {
+                        if (i%2 != 0) {
+                            d3.select(this).style('background-color', '#DDD')
+                        } else {
+                            d3.select(this).style('background-color', null)
+                        }
+                    });
+                })
+
+            // Чётные строки красим серым
+            tbody.selectAll('tr').attr('class', function(d, i) {
+                if (i%2 != 0) {
+                    d3.select(this).style('background-color', '#DDD')
+                }
+            });
+        }
+        updateData();
+        showDataRows(statsData);
+    });
+  </script>
+</body>
+</html>

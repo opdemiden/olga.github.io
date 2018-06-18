@@ -1,0 +1,31 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+    <link href="./hw1.css" rel="stylesheet">
+    <script type="text/javascript" src="./hw1.js"></script>
+    <meta charset="utf-8" />
+    <title>VIS 101 Homework</title>
+</head>
+<body>
+    <h1 class="hcont">First VIS 101 Homework</h1>
+    <div class="qtp cont">
+        <h2>Quote Of the day</h2>
+        <p class="qtc cont" id="QOD_text_area">
+            <!--All successful men and women are big dreamers. They imagine what their future could be, ideal in every respect, and then they work every day toward their distant vision, that goal or purpose.” – Brian Tracy-->
+        </p>
+    </div>
+    <div class="block">
+        <button type="button" id="QOD_btn" onclick="getQuote()" class="btn">Cange QuoteOf the Day</button>
+    </div>
+
+    <div class="block">
+        <form>
+            <select id="selAthors"></select>
+            <button type="button" id="setAthor" onclick="getSelAuthorQuote()" class="btn">Load Author Quote</button>
+            <!--<input class="btn" type="button" id="setAthor" name="setAthor" value="Load Author Quote" />-->
+        </form>
+    </div>
+</body>
+</html>
